@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from astral import LocationInfo
@@ -11,11 +11,11 @@ city = LocationInfo(
     "Scotland",
     "Europe/London",
     57.4778,
-    -4.2247
+    -4.2247,
 )
 
 START_DATE = date(2026, 11, 24)
-END_DATE = date(2050, 12, 31)
+END_DATE = date(2028, 12, 31)
 
 lines = [
     "BEGIN:VCALENDAR",
@@ -23,8 +23,30 @@ lines = [
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "PRODID:-//George Inverness Sun Calendar//EN",
-    "X-WR-CALNAME:Inverness Sunrise & Sunset"
+    "X-WR-CALNAME:Inverness Sunrise & Sunset",
+    "X-WR-TIMEZONE:Europe/London",
+    "",
+    "BEGIN:VTIMEZONE",
+    "TZID:Europe/London",
+    "X-LIC-LOCATION:Europe/London",
+    "BEGIN:DAYLIGHT",
+    "TZOFFSETFROM:+0000",
+    "TZOFFSETTO:+0100",
+    "TZNAME:BST",
+    "DTSTART:19810329T010000",
+    "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+    "END:DAYLIGHT",
+    "BEGIN:STANDARD",
+    "TZOFFSETFROM:+0100",
+    "TZOFFSETTO:+0000",
+    "TZNAME:GMT",
+    "DTSTART:19961027T020000",
+    "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+    "END:STANDARD",
+    "END:VTIMEZONE",
 ]
+
+dtstamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 current = START_DATE
 
@@ -40,29 +62,33 @@ while current <= END_DATE:
 
     lines.extend([
         "BEGIN:VEVENT",
+        f"UID:sunrise-{current.isoformat()}@grumblesuk.github.io",
+        f"DTSTAMP:{dtstamp}",
         f"DTSTART;TZID=Europe/London:{sunrise_start.strftime('%Y%m%dT%H%M%S')}",
         f"DTEND;TZID=Europe/London:{sunrise.strftime('%Y%m%dT%H%M%S')}",
-        "SUMMARY:Sunrise",
+        f"SUMMARY:Sunrise ({sunrise.strftime('%H:%M')})",
         "STATUS:CONFIRMED",
         "TRANSP:OPAQUE",
-        "END:VEVENT"
+        "END:VEVENT",
     ])
 
     lines.extend([
         "BEGIN:VEVENT",
+        f"UID:sunset-{current.isoformat()}@grumblesuk.github.io",
+        f"DTSTAMP:{dtstamp}",
         f"DTSTART;TZID=Europe/London:{sunset_start.strftime('%Y%m%dT%H%M%S')}",
         f"DTEND;TZID=Europe/London:{sunset.strftime('%Y%m%dT%H%M%S')}",
-        "SUMMARY:Sunset",
+        f"SUMMARY:Sunset ({sunset.strftime('%H:%M')})",
         "STATUS:CONFIRMED",
         "TRANSP:OPAQUE",
-        "END:VEVENT"
+        "END:VEVENT",
     ])
 
     current += timedelta(days=1)
 
 lines.append("END:VCALENDAR")
 
-with open("inverness-sunrise.ics", "w", encoding="utf-8") as f:
-    f.write("\n".join(lines))
+with open("inverness-sunrise.ics", "w", encoding="utf-8", newline="\r\n") as f:
+    f.write("\r\n".join(lines))
 
-print("Calendar created")
+print("Calendar created successfully.")
